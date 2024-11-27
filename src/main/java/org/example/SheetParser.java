@@ -9,6 +9,7 @@ public class SheetParser {
     private final Map<String, List<String>> rules = new HashMap<>();
     private Workbook header;
     private Map<String, List<String>> resultMap = new HashMap<>();
+    private String fileUrl;
 
     public SheetParser() {
         try  {
@@ -77,10 +78,11 @@ public class SheetParser {
         rules.clear();
         rules.putAll(normalizedRules);
     }
-    void parse(String workbook) {
+    void parse(String filePth) {
         try {
-            Workbook currentWorkbook = new Workbook(workbook);
+            Workbook currentWorkbook = new Workbook(filePth);
 
+            fileUrl = "file:///" + filePth.replace("\\", "/");
             WorksheetCollection worksheets = currentWorkbook.getWorksheets();
 
             for (int i = 0; i < worksheets.getCount(); i++) {
@@ -167,18 +169,25 @@ public class SheetParser {
                     return;
                 }
 
-                // Get the column index from the column letter
                 int colIndex = getColumnIndexFromLetter(columnLetter);
 
-                // Write values to the column starting from the 3rd row (row index 2)
                 for (int i = 0; i < list.size(); i++) {
                     cells.get(2 + i, colIndex).putValue(list.get(i));
+
+                    worksheet.getHyperlinks().add(2 + i, 0, 1, 1, fileUrl);
+
+                    cells.get(2 + i, 0).setValue("Click here to view the source file");
+
+                    Style style = cells.get(2 + i, 0).getStyle();
+                    Font font = style.getFont();
+                    font.setColor(Color.getBlue()); // Blue text
+                    font.setUnderline(FontUnderlineType.SINGLE); // Underlined text
+                    cells.get(2 + i, 0).setStyle(style); // Apply the style to the cell
                 }
 
                 System.out.println("Data for key '" + key + "' written to column " + columnLetter);
             });
 
-            // Save the workbook
             header.save("Updated_Header.xlsx");
             System.out.println("Workbook saved as 'Updated_Header.xlsx'.");
 
